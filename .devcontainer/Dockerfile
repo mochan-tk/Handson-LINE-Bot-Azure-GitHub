@@ -5,6 +5,9 @@
 ARG VARIANT=16
 FROM mcr.microsoft.com/azure-functions/node:4-node${VARIANT}-core-tools
 
+RUN curl -Lo /usr/local/bin/bicep https://github.com/Azure/bicep/releases/latest/download/bicep-linux-x64 \
+    && chmod +x /usr/local/bin/bicep 
+
 # [Optional] Uncomment this section to install additional OS packages.
 # RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
 #     && apt-get -y install --no-install-recommends <your-package-list-here>
