@@ -6,8 +6,8 @@ const crypto = require("crypto");
 const fs = require('fs');
 const path = require('path');
 
-// const BASE_URL = process.env.BASE_URL;
-// const BASE_PUBLIC_DIR = 'public';
+const BASE_URL = process.env.BASE_URL;
+const BASE_PUBLIC_DIR = 'public';
 
 // create LINE SDK config from env variables
 const config = {
@@ -99,7 +99,7 @@ async function handleEvent(event) {
           }
         });
       }
-    /*
+    
     } else if (event.message.type === 'image') {
       //https://developers.line.biz/ja/reference/messaging-api/#image-message
       const stream = await client.getMessageContent(event.message.id);
@@ -131,7 +131,6 @@ async function handleEvent(event) {
         originalContentUrl: `${BASE_URL}/${BASE_PUBLIC_DIR}/${uploadFileName}`,
         duration: 60000
       });
-      */
     } else if (event.message.type === 'location') {
       //https://developers.line.biz/ja/reference/messaging-api/#location-message
       return client.replyMessage(event.replyToken,{
@@ -343,7 +342,7 @@ const flexMsg = {
   }
 
 // listen on port
-const port = process.env.PORT || 8080;
+const port = process.env.PORT || 7071;
 app.listen(port, () => {
   console.log(`listening on ${port}`);
   console.log(config);

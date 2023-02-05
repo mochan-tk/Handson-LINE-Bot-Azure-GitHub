@@ -1,0 +1,15 @@
+{
+    "name": "line-bot",
+    "version": "",
+    "description": "",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "start": "node index.js"
+    },
+    "author": "",
+    "dependencies": {
+        "@line/bot-sdk": "^7.5.2",
+        "dotenv": "^16.0.3",
+        "express": "^4.18.2"
+    }
+}
