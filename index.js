@@ -3,6 +3,11 @@
 const line = require('@line/bot-sdk');
 const express = require('express');
 const crypto = require("crypto");
+const fs = require('fs');
+const path = require('path');
+
+const BASE_URL = process.env.BASE_URL;
+const BASE_PUBLIC_DIR = 'public';
 
 // create LINE SDK config from env variables
 const config = {
@@ -16,6 +21,9 @@ const client = new line.Client(config);
 // create Express app
 // about Express itself: https://expressjs.com/
 const app = express();
+
+// serve static and downloaded files
+app.use(`/${BASE_PUBLIC_DIR}`, express.static(BASE_PUBLIC_DIR));
 
 // register a webhook handler with middleware
 // about the middleware, please refer to doc
@@ -91,26 +99,21 @@ async function handleEvent(event) {
           }
         });
       }
-    /*
+    
     } else if (event.message.type === 'image') {
       //https://developers.line.biz/ja/reference/messaging-api/#image-message
       const stream = await client.getMessageContent(event.message.id);
       const contents = await getStreamData(stream);
       const uploadFileName = `${crypto.randomBytes(20).toString('hex')}.jpg`;
-      const bucketName = BUCKET_NAME
-      const bucket = storage.bucket(bucketName);
-      const file = bucket.file(uploadFileName);
-      await file.save(Buffer.concat(contents), (err) => {
-        if (!err) {
-          console.log("success");
-        } else {
-          console.log("error " + err);
-        }
+      const savePath = path.join(__dirname, BASE_PUBLIC_DIR, uploadFileName);
+      fs.appendFile(savePath, Buffer.concat(contents), (err) => {
+        if (err) throw err;
+        console.log("success");
       });
       return client.replyMessage(event.replyToken,{
         type: 'image',
-        originalContentUrl: `https://storage.googleapis.com/${bucketName}/${uploadFileName}`,
-        previewImageUrl: `https://storage.googleapis.com/${bucketName}/${uploadFileName}`
+        originalContentUrl: `${BASE_URL}/${BASE_PUBLIC_DIR}/${uploadFileName}`,
+        previewImageUrl: `${BASE_URL}/${BASE_PUBLIC_DIR}/${uploadFileName}`
       });
     } else if (event.message.type === 'audio') {
       //https://developers.line.biz/ja/reference/messaging-api/#audio-message
@@ -118,22 +121,16 @@ async function handleEvent(event) {
       const stream = await client.getMessageContent(event.message.id);
       const contents = await getStreamData(stream);
       const uploadFileName = `${crypto.randomBytes(20).toString('hex')}.mp3`;
-      const bucketName = BUCKET_NAME
-      const bucket = storage.bucket(bucketName);
-      const file = bucket.file(uploadFileName);
-      await file.save(Buffer.concat(contents), (err) => {
-        if (!err) {
-          console.log("success");
-        } else {
-          console.log("error " + err);
-        }
+      const savePath = path.join(__dirname, BASE_PUBLIC_DIR, uploadFileName);
+      fs.appendFile(savePath, Buffer.concat(contents), (err) => {
+        if (err) throw err;
+        console.log("success");
       });
       return client.replyMessage(event.replyToken,{
         type: 'audio',
-        originalContentUrl: `https://storage.googleapis.com/${bucketName}/${uploadFileName}`,
+        originalContentUrl: `${BASE_URL}/${BASE_PUBLIC_DIR}/${uploadFileName}`,
         duration: 60000
       });
-    */
     } else if (event.message.type === 'location') {
       //https://developers.line.biz/ja/reference/messaging-api/#location-message
       return client.replyMessage(event.replyToken,{
