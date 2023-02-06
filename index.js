@@ -23,7 +23,7 @@ const client = new line.Client(config);
 const app = express();
 
 // serve static and downloaded files
-app.use(`/${BASE_PUBLIC_DIR}`, express.static(BASE_PUBLIC_DIR));
+// app.use(`/${BASE_PUBLIC_DIR}`, express.static(BASE_PUBLIC_DIR));
 
 // register a webhook handler with middleware
 // about the middleware, please refer to doc
@@ -343,8 +343,7 @@ const flexMsg = {
   }
 
 // listen on port
-const port = process.env.PORT || 8080;
+const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`listening on ${port}`);
-  console.log(config);
 });
