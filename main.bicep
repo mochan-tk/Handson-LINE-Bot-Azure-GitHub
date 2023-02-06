@@ -3,6 +3,8 @@ param location string = resourceGroup().location
 param ramdom string
 param secret string
 param access string
+param containerRegistryName string
+param containerVer string
 
 var functionAppName = 'fn-${toLower(ramdom)}'
 var appServicePlanName = 'FunctionPlan'
@@ -14,13 +16,9 @@ param accountName string = 'cosmos-${toLower(ramdom)}'
 var databaseName = 'SimpleDB'
 var cosmosContainerName = 'Accounts'
 
-// https://github.com/Azure-Samples/azure-data-factory-runtime-app-service/blob/ca44b7f23971c608a4e33020d130026a06f07788/deploy/modules/acr.bicep
-@description('The name of the container registry to create. This must be globally unique.')
-param containerRegistryName string = 'shir${uniqueString(resourceGroup().id)}'
-
 @description('The name of the SKU to use when creating the container registry.')
 param skuName string = 'Standard'
-
+/*
 resource storageAccount 'Microsoft.Storage/storageAccounts@2021-08-01' = {
   name: storageAccountName
   location: location
@@ -129,60 +127,83 @@ resource plan 'Microsoft.Web/serverfarms@2021-03-01' = {
     name: 'Y1'
   }
 }
-
-resource containerRegistry 'Microsoft.ContainerRegistry/registries@2022-12-01' = {
+*/
+resource containerRegistry 'Microsoft.ContainerRegistry/registries@2022-12-01' existing = {
   name: containerRegistryName
-  location: location
-  sku: {
-    name: skuName
-  }
-  properties: {
-    adminUserEnabled: true
-  }
 }
 
-var containerImageName = 'adf/shir'
-var dockerfileSourceGitRepository = 'https://github.com/mochan-tk/Handson-LINE-Bot-Azure-GitHub.git'
-// https://learn.microsoft.com/en-us/azure/templates/microsoft.containerregistry/registries/taskruns
-resource buildTask 'Microsoft.ContainerRegistry/registries/taskRuns@2019-06-01-preview' = {
-  parent: containerRegistry
-  name: 'buildTask'
+var containerImageName = 'linebot/aca'
+var containerImageTag = containerVer
+
+// https://github.com/Azure/azure-quickstart-templates/blob/master/quickstarts/microsoft.app/container-app-scale-http/main.bicep
+@description('Specifies the name of the log analytics workspace.')
+param containerAppLogAnalyticsName string = 'log-${uniqueString(resourceGroup().id)}'
+
+resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
+  name: containerAppLogAnalyticsName
+  location: location
   properties: {
-    runRequest: {
-      type: 'DockerBuildRequest'
-      dockerFilePath: 'Dockerfile'
-      sourceLocation: dockerfileSourceGitRepository
-      imageNames: [
-        '${containerImageName}'
-      ]
-      platform: {
-        os: 'Windows'
-        architecture: 'x86'
-      }
+    sku: {
+      name: 'PerGB2018'
     }
   }
 }
 
-resource managedEnvironments 'Microsoft.App/managedEnvironments@2022-03-01' existing = {
+resource managedEnvironments 'Microsoft.App/managedEnvironments@2022-10-01' = {
   name: 'managedEnv'
+  location: location
+  properties: {
+    appLogsConfiguration: {
+      destination: 'log-analytics'
+      logAnalyticsConfiguration: {
+        customerId: logAnalytics.properties.customerId
+        sharedKey: logAnalytics.listKeys().primarySharedKey
+      }
+    }
+  }
+  sku: {
+    name: 'Consumption'
+  }
 }
 
+// https://learn.microsoft.com/ja-jp/dotnet/orleans/deployment/deploy-to-azure-container-apps
 resource containerApps 'Microsoft.App/containerApps@2022-10-01' = {
-  name: 'containerApps'
+  name: 'container-apps'
   location: location
   properties: {
     managedEnvironmentId: managedEnvironments.id
     configuration: {
+      registries: [
+        {
+          server: containerRegistry.properties.loginServer
+          username: containerRegistry.listCredentials().username
+          passwordSecretRef: 'reg-pswd-d6696fb9-a98d'
+        }
+      ]
+      secrets: [
+        {
+          name: 'reg-pswd-d6696fb9-a98d'
+          value: containerRegistry.listCredentials().passwords[0].value
+        }
+      ]
+      activeRevisionsMode: 'Single'
       ingress: {
         external: true
-        targetPort: 8080
+        transport: 'auto'
+        targetPort: 3000
       }
     }
     template: {
       containers: [
         {
           name: 'line-bot-container-apps'
-          image: '${containerRegistry.name}.azurecr.io/${containerImageName}'
+          image: '${containerRegistry.name}.azurecr.io/${containerImageName}:${containerImageTag}'
+          command: []
+          resources: {
+            cpu: json('0.5')
+            memory: '1Gi'
+
+          }
           env: [
             {
               name: 'CHANNEL_SECRET'
@@ -202,6 +223,9 @@ resource containerApps 'Microsoft.App/containerApps@2022-10-01' = {
     }
   }
 }
+
+output acaUrl string = 'https://${containerApps.properties.configuration.ingress.fqdn}'
+
 /*
 // https://learn.microsoft.com/en-us/azure/templates/microsoft.app/containerapps
 resource functionApp 'Microsoft.Web/sites@2021-03-01' = {
