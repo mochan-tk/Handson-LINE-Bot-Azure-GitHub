@@ -3,8 +3,15 @@
 const line = require('@line/bot-sdk');
 const express = require('express');
 const crypto = require("crypto");
+const { BlobServiceClient } = require("@azure/storage-blob");
+const { CosmosClient } = require("@azure/cosmos");
 const fs = require('fs');
 const path = require('path');
+
+// Azure Storage
+const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.STORAGE_CONNECTION_STRING);
+const containerClient = blobServiceClient.getContainerClient('files');
+
 
 // const BASE_URL = process.env.BASE_URL;
 // const BASE_PUBLIC_DIR = 'public';
@@ -99,39 +106,31 @@ async function handleEvent(event) {
           }
         });
       }
-    /*
     } else if (event.message.type === 'image') {
       //https://developers.line.biz/ja/reference/messaging-api/#image-message
+      const blobName = uuidv4() + '.jpg'
+      const blockBlobClient = containerClient.getBlockBlobClient(blobName);
       const stream = await client.getMessageContent(event.message.id);
-      const contents = await getStreamData(stream);
-      const uploadFileName = `${crypto.randomBytes(20).toString('hex')}.jpg`;
-      const savePath = path.join(__dirname, BASE_PUBLIC_DIR, uploadFileName);
-      fs.appendFile(savePath, Buffer.concat(contents), (err) => {
-        if (err) throw err;
-        console.log("success");
-      });
+      const data = await getStreamData(stream);
+      blockBlobClient.uploadData(data);
       return client.replyMessage(event.replyToken,{
         type: 'image',
-        originalContentUrl: `${BASE_URL}/${BASE_PUBLIC_DIR}/${uploadFileName}`,
-        previewImageUrl: `${BASE_URL}/${BASE_PUBLIC_DIR}/${uploadFileName}`
+        originalContentUrl: `https://${blobServiceClient.accountName}.blob.core.windows.net/files/${blobName}`,
+        previewImageUrl: `https://${blobServiceClient.accountName}.blob.core.windows.net/files/${blobName}`
       });
     } else if (event.message.type === 'audio') {
       //https://developers.line.biz/ja/reference/messaging-api/#audio-message
       //durationはこれでとれそう？ > https://www.npmjs.com/package/mp3-duration
+      const blobName = uuidv4() + '.mp3'
+      const blockBlobClient = containerClient.getBlockBlobClient(blobName);
       const stream = await client.getMessageContent(event.message.id);
-      const contents = await getStreamData(stream);
-      const uploadFileName = `${crypto.randomBytes(20).toString('hex')}.mp3`;
-      const savePath = path.join(__dirname, BASE_PUBLIC_DIR, uploadFileName);
-      fs.appendFile(savePath, Buffer.concat(contents), (err) => {
-        if (err) throw err;
-        console.log("success");
-      });
+      const data = await getStreamData(stream);
+      const res = blockBlobClient.uploadData(data);
       return client.replyMessage(event.replyToken,{
         type: 'audio',
-        originalContentUrl: `${BASE_URL}/${BASE_PUBLIC_DIR}/${uploadFileName}`,
+        originalContentUrl: `https://${blobServiceClient.accountName}.blob.core.windows.net/files/${blobName}`,
         duration: 60000
       });
-      */
     } else if (event.message.type === 'location') {
       //https://developers.line.biz/ja/reference/messaging-api/#location-message
       return client.replyMessage(event.replyToken,{
@@ -143,6 +142,43 @@ async function handleEvent(event) {
       });
     }
   
+    // // Insert
+    // const newItem = {
+    //   id: userId,
+    //   category: "fun",
+    //   name: "Cosmos DB",
+    //   description: "Complete Cosmos DB Node.js Quickstart ⚡",
+    //   isComplete: false
+    // };
+    // const { resource: createdItem } = await cosmosDBContainer.items.create(newItem);
+
+    // // Query
+    // const querySpec = {
+    //   query: `SELECT * from c WHERE c.id="${userId}"`
+    // };
+    // const { resources: items } = await cosmosDBContainer.items
+    // .query(querySpec)
+    // .fetchAll();
+    
+    // let description;
+    // items.forEach(item => {
+    //   description = item.description;
+    // });
+
+    // // Update
+    // const changeItem = {
+    //   id: userId,
+    //   category: "fun",
+    //   name: "Cosmos DB",
+    //   description: "Complete Cosmos DB Node.js Quickstart ⚡",
+    //   isComplete: true
+    // };
+
+    // const { resource: updatedItem } = await cosmosDBContainer
+    // .item(userId)
+    // .replace(changeItem);
+    
+    // const echo = { type: 'text', text: description };
 
     // create a echoing text message
     // const echo = { type: 'text', text: event.message.text };
