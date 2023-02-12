@@ -7,7 +7,7 @@ param containerVer string
 param containerRegistryName string = 'shir${uniqueString(resourceGroup().id)}'
 
 @description('The name of the SKU to use when creating the container registry.')
-param skuName string = 'Standard'
+param skuName string = 'Basic'
 
 resource containerRegistry 'Microsoft.ContainerRegistry/registries@2022-12-01' = {
   name: containerRegistryName

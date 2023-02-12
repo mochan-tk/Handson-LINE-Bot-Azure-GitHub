@@ -6,8 +6,6 @@ param access string
 param containerRegistryName string
 param containerVer string
 
-var functionAppName = 'fn-${toLower(ramdom)}'
-var appServicePlanName = 'FunctionPlan'
 var appInsightsName = 'AppInsights'
 var storageAccountName = 'fnstor${toLower(substring(replace(ramdom, '-', ''), 0, 18))}'
 var containerName = 'files'
@@ -16,10 +14,7 @@ param accountName string = 'cosmos-${toLower(ramdom)}'
 var databaseName = 'SimpleDB'
 var cosmosContainerName = 'Accounts'
 
-@description('The name of the SKU to use when creating the container registry.')
-param skuName string = 'Standard'
-/*
-resource storageAccount 'Microsoft.Storage/storageAccounts@2021-08-01' = {
+resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
   name: storageAccountName
   location: location
   sku: {
@@ -45,7 +40,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2021-08-01' = {
   }
 }
 
-resource container 'Microsoft.Storage/storageAccounts/blobServices/containers@2021-08-01' = {
+resource container 'Microsoft.Storage/storageAccounts/blobServices/containers@2022-09-01' = {
   name: '${storageAccount.name}/default/${containerName}'
   properties: {
     publicAccess:'Container'
@@ -53,7 +48,7 @@ resource container 'Microsoft.Storage/storageAccounts/blobServices/containers@20
 }
 
 // https://docs.microsoft.com/en-us/azure/cosmos-db/sql/manage-with-bicep
-resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2021-10-15' = {
+resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2022-08-15' = {
   name: toLower(accountName)
   location: location
   kind: 'GlobalDocumentDB'
@@ -78,7 +73,7 @@ resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2021-10-15' = {
   }
 }
 
-resource cosmosDB 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2021-10-15' = {
+resource cosmosDB 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2022-08-15' = {
   parent: cosmosAccount
   name: databaseName
   properties: {
@@ -88,7 +83,7 @@ resource cosmosDB 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2021-10-15
   }
 }
 
-resource cosmosContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2021-10-15' = {
+resource cosmosContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2022-08-15' = {
   parent: cosmosDB
   name: cosmosContainerName
   properties: {
@@ -105,29 +100,6 @@ resource cosmosContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/con
     }
   }
 
-resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
-  name: appInsightsName
-  location: location
-  kind: 'web'
-  properties: {
-    Application_Type: 'web'
-    publicNetworkAccessForIngestion: 'Enabled'
-    publicNetworkAccessForQuery: 'Enabled'
-  }
-}
-
-resource plan 'Microsoft.Web/serverfarms@2021-03-01' = {
-  name: appServicePlanName
-  location: location
-  kind: 'linux'
-  properties: {
-    reserved: true
-  }
-  sku: {
-    name: 'Y1'
-  }
-}
-*/
 resource containerRegistry 'Microsoft.ContainerRegistry/registries@2022-12-01' existing = {
   name: containerRegistryName
 }
@@ -142,10 +114,24 @@ param containerAppLogAnalyticsName string = 'log-${uniqueString(resourceGroup().
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
   name: containerAppLogAnalyticsName
   location: location
-  properties: {
+  properties: any({
+    retentionInDays: 30
+    features: {
+      searchVersion: 1
+    }
     sku: {
       name: 'PerGB2018'
     }
+  })
+}
+
+resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
+  name: appInsightsName
+  location: location
+  kind: 'web'
+  properties: {
+    Application_Type: 'web'
+    WorkspaceResourceId:logAnalytics.id
   }
 }
 
@@ -153,6 +139,7 @@ resource managedEnvironments 'Microsoft.App/managedEnvironments@2022-10-01' = {
   name: 'managedEnv'
   location: location
   properties: {
+    daprAIInstrumentationKey:appInsights.properties.InstrumentationKey
     appLogsConfiguration: {
       destination: 'log-analytics'
       logAnalyticsConfiguration: {
@@ -167,6 +154,7 @@ resource managedEnvironments 'Microsoft.App/managedEnvironments@2022-10-01' = {
 }
 
 // https://learn.microsoft.com/ja-jp/dotnet/orleans/deployment/deploy-to-azure-container-apps
+// https://github.com/microsoft/azure-container-apps/blob/main/docs/templates/bicep/main.bicep
 resource containerApps 'Microsoft.App/containerApps@2022-10-01' = {
   name: 'container-apps'
   location: location
@@ -213,6 +201,30 @@ resource containerApps 'Microsoft.App/containerApps@2022-10-01' = {
               name: 'CHANNEL_ACCESS_TOKEN'
               value: access
             }
+            {
+              name: 'STORAGE_CONNECTION_STRING'
+              value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${listKeys(storageAccount.id, storageAccount.apiVersion).keys[0].value}'
+            }
+            {
+              name: 'COSMOSDB_ACCOUNT'
+              value: cosmosAccount.properties.documentEndpoint
+            }
+            {
+              name: 'COSMOSDB_KEY'
+              value: cosmosAccount.listKeys().primaryMasterKey
+            }
+            {
+              name: 'COSMOSDB_DATABASENAME'
+              value: databaseName
+            }
+            {
+              name: 'COSMOSDB_CONTAINERNAME'
+              value: cosmosContainerName
+            }
+            {
+              name: 'COSMOSDB_CONNECTION_STRING'
+              value: 'AccountEndpoint=${cosmosAccount.properties.documentEndpoint};AccountKey=${cosmosAccount.listKeys().primaryMasterKey};'
+            }
           ]
         }
       ]
@@ -225,82 +237,3 @@ resource containerApps 'Microsoft.App/containerApps@2022-10-01' = {
 }
 
 output acaUrl string = 'https://${containerApps.properties.configuration.ingress.fqdn}'
-
-/*
-// https://learn.microsoft.com/en-us/azure/templates/microsoft.app/containerapps
-resource functionApp 'Microsoft.Web/sites@2021-03-01' = {
-  name: functionAppName
-  location: location
-  kind: 'functionapp'
-  properties: {
-    serverFarmId: plan.id
-    siteConfig: {
-      appSettings: [
-        {
-          name: 'AzureWebJobsStorage'
-          value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${listKeys(storageAccount.id, '2019-06-01').keys[0].value}'
-        }
-        {
-          name: 'WEBSITE_CONTENTAZUREFILECONNECTIONSTRING'
-          value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${listKeys(storageAccount.id, storageAccount.apiVersion).keys[0].value}'
-        }
-        {
-          name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
-          value: appInsights.properties.InstrumentationKey
-        }
-        {
-          name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-          value: 'InstrumentationKey=${appInsights.properties.InstrumentationKey}'
-        }
-        {
-          name: 'FUNCTIONS_WORKER_RUNTIME'
-          value: 'node'
-        }
-        {
-          name: 'WEBSITE_NODE_DEFAULT_VERSION'
-          value: '~12'
-        }
-        {
-          name: 'FUNCTIONS_EXTENSION_VERSION'
-          value: '~3'
-        }
-        {
-          name: 'CHANNEL_SECRET'
-          value: secret
-        }
-        {
-          name: 'CHANNEL_ACCESS_TOKEN'
-          value: access
-        }
-        {
-          name: 'STORAGE_CONNECTION_STRING'
-          value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${listKeys(storageAccount.id, storageAccount.apiVersion).keys[0].value}'
-        }
-        {
-          name: 'COSMOSDB_ACCOUNT'
-          value: cosmosAccount.properties.documentEndpoint
-        }
-        {
-          name: 'COSMOSDB_KEY'
-          value: cosmosAccount.listKeys().primaryMasterKey
-        }
-        {
-          name: 'COSMOSDB_DATABASENAME'
-          value: databaseName
-        }
-        {
-          name: 'COSMOSDB_CONTAINERNAME'
-          value: cosmosContainerName
-        }
-        {
-          name: 'COSMOSDB_CONNECTION_STRING'
-          value: 'AccountEndpoint=${cosmosAccount.properties.documentEndpoint};AccountKey=${cosmosAccount.listKeys().primaryMasterKey};'
-        }
-      ]
-    }
-    httpsOnly: true
-  }
-}
-
-output functionAppName string = functionAppName
-*/

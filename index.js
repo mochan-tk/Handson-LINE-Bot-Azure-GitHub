@@ -142,46 +142,46 @@ async function handleEvent(event) {
       });
     }
   
-    // // Insert
-    // const newItem = {
-    //   id: userId,
-    //   category: "fun",
-    //   name: "Cosmos DB",
-    //   description: "Complete Cosmos DB Node.js Quickstart ⚡",
-    //   isComplete: false
-    // };
-    // const { resource: createdItem } = await cosmosDBContainer.items.create(newItem);
+    // Insert
+    const newItem = {
+      id: userId,
+      category: "fun",
+      name: "Cosmos DB",
+      description: "Complete Cosmos DB Node.js Quickstart ⚡",
+      isComplete: false
+    };
+    const { resource: createdItem } = await cosmosDBContainer.items.create(newItem);
 
-    // // Query
-    // const querySpec = {
-    //   query: `SELECT * from c WHERE c.id="${userId}"`
-    // };
-    // const { resources: items } = await cosmosDBContainer.items
-    // .query(querySpec)
-    // .fetchAll();
+    // Query
+    const querySpec = {
+      query: `SELECT * from c WHERE c.id="${userId}"`
+    };
+    const { resources: items } = await cosmosDBContainer.items
+    .query(querySpec)
+    .fetchAll();
     
-    // let description;
-    // items.forEach(item => {
-    //   description = item.description;
-    // });
+    let description;
+    items.forEach(item => {
+      description = item.description;
+    });
 
-    // // Update
-    // const changeItem = {
-    //   id: userId,
-    //   category: "fun",
-    //   name: "Cosmos DB",
-    //   description: "Complete Cosmos DB Node.js Quickstart ⚡",
-    //   isComplete: true
-    // };
+    // Update
+    const changeItem = {
+      id: userId,
+      category: "fun",
+      name: "Cosmos DB",
+      description: "Complete Cosmos DB Node.js Quickstart ⚡",
+      isComplete: true
+    };
 
-    // const { resource: updatedItem } = await cosmosDBContainer
-    // .item(userId)
-    // .replace(changeItem);
+    const { resource: updatedItem } = await cosmosDBContainer
+    .item(userId)
+    .replace(changeItem);
     
-    // const echo = { type: 'text', text: description };
+    const echo = { type: 'text', text: description };
 
     // create a echoing text message
-    const echo = { type: 'text', text: event.message.text };
+    // const echo = { type: 'text', text: event.message.text };
 
     // use reply API
     return client.replyMessage(event.replyToken, echo);
