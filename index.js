@@ -127,7 +127,7 @@ async function handleEvent(event) {
           id: userId,
           mskflag: "on",
         };
-        const { createdItem } = await cosmosDBContainer.items.create(newItem);
+        const { resource: createdItem } = await cosmosDBContainer.items.create(newItem);
         return client.replyMessage(event.replyToken,{
           type: 'text',
           text: 'マスク着用の検査を行います。カメラを起動し顔を撮影して送ってください。📷',
@@ -155,7 +155,7 @@ async function handleEvent(event) {
       const querySpec = {
         query: `SELECT * from c WHERE c.id="${userId}"`
       };
-      const { items } = await cosmosDBContainer.items
+      const { resources: items } = await cosmosDBContainer.items
       .query(querySpec)
       .fetchAll();
       let maskflag = 'off';
@@ -167,7 +167,7 @@ async function handleEvent(event) {
         id: userId,
         maskflag: "off"
       };
-      const { updatedItem } = await cosmosDBContainer
+      const { resource: updatedItem } = await cosmosDBContainer
       .item(userId)
       .replace(changeItem);
 
