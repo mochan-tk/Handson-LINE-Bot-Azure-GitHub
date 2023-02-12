@@ -133,13 +133,12 @@ async function handleEvent(event) {
 
       // https://learn.microsoft.com/ja-jp/azure/cognitive-services/computer-vision/quickstarts-sdk/identity-client-library?tabs=visual-studio&pivots=programming-language-javascript
       const face_image_url = `https://${blobServiceClient.accountName}.blob.core.windows.net/files/${blobName}`;
-      FaceModels.FaceDetectWithUrlOptionalParams
-      const options = new FaceModels.FaceDetectWithUrlOptionalParams({
-                returnFaceAttributes: ["Accessories","Age","Blur","Emotion","Exposure","FacialHair","Glasses","Hair","HeadPose","Makeup","Noise","Occlusion","Smile","QualityForRecognition"],
-                // We specify detection model 1 because we are retrieving attributes.
-                detectionModel: "detection_01",
-                recognitionModel: "recognition_03"
-      });
+      // const options = new FaceModels.FaceDetectWithUrlOptionalParams({
+      //           returnFaceAttributes: ["Accessories","Age","Blur","Emotion","Exposure","FacialHair","Glasses","Hair","HeadPose","Makeup","Noise","Occlusion","Smile","QualityForRecognition"],
+      //           // We specify detection model 1 because we are retrieving attributes.
+      //           detectionModel: "detection_01",
+      //           recognitionModel: "recognition_03"
+      // });
       let detected_faces = await client.face.detectWithUrl(face_image_url);
         // {
         //     detectionModel: "detection_03",
