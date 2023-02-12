@@ -195,7 +195,7 @@ const getStreamData = async (stream)  => {
         result.push(Buffer.from(chunk));
       });
       stream.on("end", () => {
-        resolve(result);
+        resolve(Buffer.concat(result));
       });
     });
 }
