@@ -4,7 +4,7 @@ param containerVer string
 
 // https://github.com/Azure-Samples/azure-data-factory-runtime-app-service/blob/ca44b7f23971c608a4e33020d130026a06f07788/deploy/modules/acr.bicep
 @description('The name of the container registry to create. This must be globally unique.')
-param containerRegistryName string = 'shir${uniqueString(resourceGroup().id)}'
+param containerRegistryName string = 'acr${uniqueString(resourceGroup().id)}'
 
 @description('The name of the SKU to use when creating the container registry.')
 param skuName string = 'Basic'

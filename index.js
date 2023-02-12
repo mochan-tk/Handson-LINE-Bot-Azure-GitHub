@@ -5,6 +5,8 @@ const express = require('express');
 const crypto = require("crypto");
 const { BlobServiceClient } = require("@azure/storage-blob");
 const { CosmosClient } = require("@azure/cosmos");
+const { CognitiveServicesCredentials } = require("@azure/ms-rest-azure-js");
+const { FaceClient, FaceModels } = require("@azure/cognitiveservices-face");
 
 // Azure Storage
 const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.STORAGE_CONNECTION_STRING);
@@ -25,6 +27,11 @@ const { endpoint, key, databaseId, containerId } = cosmosDBConfig;
 const cosmosDBClient = new CosmosClient({ endpoint, key });
 const database = cosmosDBClient.database(databaseId);
 const cosmosDBContainer = database.container(containerId);
+
+const faceKey = process.env.COGNITIVESERVICE_KEY;
+const faceEndPoint = process.env.COGNITIVESERVICE_ENDPOINT;
+const cognitiveServiceCredentials = new CognitiveServicesCredentials(faceKey);
+const faceClient = new FaceClient(cognitiveServiceCredentials, faceEndPoint);
 
 // create LINE SDK config from env variables
 const config = {
@@ -123,11 +130,25 @@ async function handleEvent(event) {
       const stream = await client.getMessageContent(event.message.id);
       const data = await getStreamData(stream);
       blockBlobClient.uploadData(data);
-      return client.replyMessage(event.replyToken,{
-        type: 'image',
-        originalContentUrl: `https://${blobServiceClient.accountName}.blob.core.windows.net/files/${blobName}`,
-        previewImageUrl: `https://${blobServiceClient.accountName}.blob.core.windows.net/files/${blobName}`
+
+      // https://learn.microsoft.com/ja-jp/azure/cognitive-services/computer-vision/quickstarts-sdk/identity-client-library?tabs=visual-studio&pivots=programming-language-javascript
+      let face_image_url = `https://${blobServiceClient.accountName}.blob.core.windows.net/files/${blobName}`;
+      let detected_faces = await client.face.detectWithUrl(face_image_url,
+        {
+            detectionModel: "detection_03",
+            recognitionModel : "recognition_04",
+            returnFaceAttributes: ["mask"]
+        });
+      detected_faces.forEach(detected_face => {
+        console.log(detected_face);
+        console.log(detected_face.faceAttributes);
+        console.log(detected_face.faceAttributes.mask);
       });
+      // return client.replyMessage(event.replyToken,{
+      //   type: 'image',
+      //   originalContentUrl: `https://${blobServiceClient.accountName}.blob.core.windows.net/files/${blobName}`,
+      //   previewImageUrl: `https://${blobServiceClient.accountName}.blob.core.windows.net/files/${blobName}`
+      // });
     } else if (event.message.type === 'audio') {
       //https://developers.line.biz/ja/reference/messaging-api/#audio-message
       //durationはこれでとれそう？ > https://www.npmjs.com/package/mp3-duration

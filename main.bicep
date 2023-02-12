@@ -14,6 +14,9 @@ param accountName string = 'cosmos-${toLower(ramdom)}'
 var databaseName = 'SimpleDB'
 var cosmosContainerName = 'Accounts'
 
+@description('That name is the name of our application. It has to be unique.Type a name followed by your resource group name. (<name>-<resourceGroupName>)')
+param cognitiveServiceName string = 'CognitiveService-${uniqueString(resourceGroup().id)}'
+
 resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
   name: storageAccountName
   location: location
@@ -99,6 +102,21 @@ resource cosmosContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/con
      options:{}
     }
   }
+
+// https://learn.microsoft.com/en-us/azure/cognitive-services/create-account-bicep?tabs=CLI
+resource cognitiveService 'Microsoft.CognitiveServices/accounts@2022-12-01' = {
+  name: cognitiveServiceName
+  location: location
+  sku: {
+    name: 'S0'
+  }
+  kind: 'CognitiveServices'
+  properties: {
+    apiProperties: {
+      statisticsEnabled: false
+    }
+  }
+}
 
 resource containerRegistry 'Microsoft.ContainerRegistry/registries@2022-12-01' existing = {
   name: containerRegistryName
@@ -224,6 +242,14 @@ resource containerApps 'Microsoft.App/containerApps@2022-10-01' = {
             {
               name: 'COSMOSDB_CONNECTION_STRING'
               value: 'AccountEndpoint=${cosmosAccount.properties.documentEndpoint};AccountKey=${cosmosAccount.listKeys().primaryMasterKey};'
+            }
+            {
+              name: 'COGNITIVESERVICE_KEY'
+              value: cognitiveService.listKeys().key1
+            }
+            {
+              name: 'COGNITIVESERVICE_ENDPOINT'
+              value: cognitiveService.properties.endpoint
             }
           ]
         }
