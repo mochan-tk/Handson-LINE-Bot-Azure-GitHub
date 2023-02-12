@@ -142,22 +142,25 @@ async function handleEvent(event) {
             recognitionModel : "recognition_04",
             returnFaceAttributes: ["mask"]
         });
+      let mask_type = '';
+      let mask_noseAndMouthCovered = '';
       detected_faces.forEach(detected_face => {
-        console.log(detected_face);
-        console.log(detected_face.faceAttributes);
-        console.log(detected_face.faceAttributes.mask);
+        mask_type = detected_face.faceAttributes.mask.type;
+        mask_noseAndMouthCovered = detected_face.faceAttributes.mask.noseAndMouthCovered;
       });
 
       let mssg = ''
 
-      if (detected_face.faceAttributes.mask.type === 'noMask') {
+      if (mask_type === 'noMask') {
         mssg = '🙅❌（むむ！鼻と口がマスクで隠れていない...ここを通すわけには行きませんな...）';
-      } else if (detected_face.faceAttributes.mask.type === 'faceMask') {
-        if (detected_face.faceAttributes.mask.noseAndMouthCovered === 'false') {
+      } else if (mask_type === 'faceMask') {
+        if (mask_noseAndMouthCovered === 'false') {
           mssg = '✅ マスクの着用を確認しました。できるだけ鼻もマスクで覆うようにしてください。入館証を発行いたします。';
-        } else if (detected_face.faceAttributes.mask.noseAndMouthCovered === 'true') {
+        } else if (mask_noseAndMouthCovered === 'true') {
           mssg = '🙆✅ 素晴らしい！マスクで鼻と口がしっかり隠れていますね！入館証を発行いたします！🎉🎉🎉';
         }
+      } else {
+        mssg = 'マスク検知が動作しませんでした。もう１度やりなおしてください。🙇';
       }
 
       const echo = { type: 'text', text: mssg };
