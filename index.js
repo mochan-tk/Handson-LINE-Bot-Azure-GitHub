@@ -133,12 +133,9 @@ async function handleEvent(event) {
 
       // https://learn.microsoft.com/ja-jp/azure/cognitive-services/computer-vision/quickstarts-sdk/identity-client-library?tabs=visual-studio&pivots=programming-language-javascript
       const face_image_url = `https://${blobServiceClient.accountName}.blob.core.windows.net/files/${blobName}`;
-      // const options = new FaceModels.FaceDetectWithUrlOptionalParams({
-      //           returnFaceAttributes: ["Accessories","Age","Blur","Emotion","Exposure","FacialHair","Glasses","Hair","HeadPose","Makeup","Noise","Occlusion","Smile","QualityForRecognition"],
-      //           // We specify detection model 1 because we are retrieving attributes.
-      //           detectionModel: "detection_01",
-      //           recognitionModel: "recognition_03"
-      // });
+
+      // { type: 'faceMask', noseAndMouthCovered: true }
+      // { type: 'noMask', noseAndMouthCovered: false }
       let detected_faces = await faceClient.face.detectWithUrl(face_image_url,
         {
             detectionModel: "detection_03",
@@ -150,7 +147,20 @@ async function handleEvent(event) {
         console.log(detected_face.faceAttributes);
         console.log(detected_face.faceAttributes.mask);
       });
-      const echo = { type: 'text', text: 'マスク' };
+
+      let mssg = ''
+
+      if (detected_face.faceAttributes.mask.type === 'noMask') {
+        mssg = '🙅❌（むむ！鼻と口がマスクで隠れていない...ここを通すわけには行きませんな...）';
+      } else if (detected_face.faceAttributes.mask.type === 'faceMask') {
+        if (detected_face.faceAttributes.mask.noseAndMouthCovered === 'false') {
+          mssg = '✅ マスクの着用を確認しました。できるだけ鼻もマスクで覆うようにしてください。入館証を発行いたします。';
+        } else if (detected_face.faceAttributes.mask.noseAndMouthCovered === 'true') {
+          mssg = '🙆✅ 素晴らしい！マスクで鼻と口がしっかり隠れていますね！入館証を発行いたします！🎉🎉🎉';
+        }
+      }
+
+      const echo = { type: 'text', text: mssg };
       return client.replyMessage(event.replyToken, echo);
       // return client.replyMessage(event.replyToken,{
       //   type: 'image',
