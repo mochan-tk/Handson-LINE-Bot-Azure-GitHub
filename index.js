@@ -139,12 +139,12 @@ async function handleEvent(event) {
       //           detectionModel: "detection_01",
       //           recognitionModel: "recognition_03"
       // });
-      let detected_faces = await client.face.detectWithUrl(face_image_url);
-        // {
-        //     detectionModel: "detection_03",
-        //     recognitionModel : "recognition_04",
-        //     returnFaceAttributes: ["mask"]
-        // });
+      let detected_faces = await faceClient.face.detectWithUrl(face_image_url,
+        {
+            detectionModel: "detection_03",
+            recognitionModel : "recognition_04",
+            returnFaceAttributes: ["mask"]
+        });
       detected_faces.forEach(detected_face => {
         console.log(detected_face);
         console.log(detected_face.faceAttributes);
