@@ -161,6 +161,8 @@ async function handleEvent(event) {
       let mask_type = '';
       let mask_noseAndMouthCovered = '';
       detected_faces.forEach(detected_face => {
+        console.log(detected_face.faceAttributes.mask.type);
+        console.log(detected_face.faceAttributes.mask.noseAndMouthCovered);
         mask_type = detected_face.faceAttributes.mask.type;
         mask_noseAndMouthCovered = detected_face.faceAttributes.mask.noseAndMouthCovered;
       });
