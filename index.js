@@ -127,7 +127,7 @@ async function handleEvent(event) {
           id: userId,
           maskflag: "on",
         };
-        const { resource: createdItem } = await cosmosDBContainer.items.create(newItem);
+        const { resource: createdItem } = await cosmosDBContainer.items.upsert(newItem);
         return client.replyMessage(event.replyToken,{
           type: 'text',
           text: 'マスク着用の検査を行います。カメラを起動し顔を撮影して送ってください。📷',
