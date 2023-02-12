@@ -108,7 +108,7 @@ async function handleEvent(event) {
       }
     } else if (event.message.type === 'image') {
       //https://developers.line.biz/ja/reference/messaging-api/#image-message
-      const blobName = uuidv4() + '.jpg'
+      const blobName = `${crypto.randomBytes(20).toString('hex')}.jpg`;
       const blockBlobClient = containerClient.getBlockBlobClient(blobName);
       const stream = await client.getMessageContent(event.message.id);
       const data = await getStreamData(stream);
@@ -121,7 +121,7 @@ async function handleEvent(event) {
     } else if (event.message.type === 'audio') {
       //https://developers.line.biz/ja/reference/messaging-api/#audio-message
       //durationはこれでとれそう？ > https://www.npmjs.com/package/mp3-duration
-      const blobName = uuidv4() + '.mp3'
+      const blobName = `${crypto.randomBytes(20).toString('hex')}.mp3`;
       const blockBlobClient = containerClient.getBlockBlobClient(blobName);
       const stream = await client.getMessageContent(event.message.id);
       const data = await getStreamData(stream);
