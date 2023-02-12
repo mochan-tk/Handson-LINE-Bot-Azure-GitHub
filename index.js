@@ -125,7 +125,7 @@ async function handleEvent(event) {
       } else if (event.message.text === 'マスク検査') {
         const newItem = {
           id: userId,
-          mskflag: "on",
+          maskflag: "on",
         };
         const { resource: createdItem } = await cosmosDBContainer.items.create(newItem);
         return client.replyMessage(event.replyToken,{
