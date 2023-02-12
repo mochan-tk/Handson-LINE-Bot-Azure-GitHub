@@ -144,6 +144,8 @@ async function handleEvent(event) {
         console.log(detected_face.faceAttributes);
         console.log(detected_face.faceAttributes.mask);
       });
+      const echo = { type: 'text', text: 'マスク' };
+      return client.replyMessage(event.replyToken, echo);
       // return client.replyMessage(event.replyToken,{
       //   type: 'image',
       //   originalContentUrl: `https://${blobServiceClient.accountName}.blob.core.windows.net/files/${blobName}`,
