@@ -87,7 +87,7 @@ async function handleEvent(event) {
           type: 'flex',
           altText: 'item list',
           contents: flexMsg
-        });
+        });      
       } else if (event.message.text === 'quick') {
         //https://developers.line.biz/ja/reference/messaging-api/#quick-reply
         return client.replyMessage(event.replyToken,{
@@ -112,6 +112,22 @@ async function handleEvent(event) {
                   "text":"不要。"
                 }
               },
+              {
+                "type": "action",
+                "action": {
+                  "type": "camera",
+                  "label": "camera"
+                }
+              }
+            ]
+          }
+        });
+      } else if (event.message.text === 'マスク検査') {
+        return client.replyMessage(event.replyToken,{
+          type: 'text',
+          text: 'マスク着用の検査を行います。カメラを起動し顔を撮影して送ってください。📷',
+          "quickReply": {
+            "items": [
               {
                 "type": "action",
                 "action": {
@@ -149,7 +165,7 @@ async function handleEvent(event) {
         mask_noseAndMouthCovered = detected_face.faceAttributes.mask.noseAndMouthCovered;
       });
 
-      let mssg = ''
+      let mssg = 'test';
 
       if (mask_type === 'noMask') {
         mssg = '🙅❌（むむ！鼻と口がマスクで隠れていない...ここを通すわけには行きませんな...）';
