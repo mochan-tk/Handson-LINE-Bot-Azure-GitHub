@@ -5,16 +5,26 @@ const express = require('express');
 const crypto = require("crypto");
 const { BlobServiceClient } = require("@azure/storage-blob");
 const { CosmosClient } = require("@azure/cosmos");
-const fs = require('fs');
-const path = require('path');
 
 // Azure Storage
 const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.STORAGE_CONNECTION_STRING);
 const containerClient = blobServiceClient.getContainerClient('files');
 
+// Azure Cosmos DB
+//https://docs.microsoft.com/en-us/azure/cosmos-db/sql/sql-api-nodejs-get-started
+//https://docs.microsoft.com/en-us/azure/cosmos-db/sql/sql-api-nodejs-application
+const cosmosDBConfig = {
+  endpoint: process.env.COSMOSDB_ACCOUNT,
+  key: process.env.COSMOSDB_KEY,
+  databaseId: process.env.COSMOSDB_DATABASENAME,
+  containerId: process.env.COSMOSDB_CONTAINERNAME
+};
 
-// const BASE_URL = process.env.BASE_URL;
-// const BASE_PUBLIC_DIR = 'public';
+const { endpoint, key, databaseId, containerId } = cosmosDBConfig;
+
+const cosmosDBClient = new CosmosClient({ endpoint, key });
+const database = cosmosDBClient.database(databaseId);
+const cosmosDBContainer = database.container(containerId);
 
 // create LINE SDK config from env variables
 const config = {
